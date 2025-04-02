@@ -35,7 +35,7 @@ export default function Dashboard() {
     const cutoffTime = Date.now() / 1000 - reportInterval * 60;
 
     const filteredData = Object.entries(data)
-      .map(([_, value]) => value as FirebaseAccelData)
+      .map(([, value]) => value as FirebaseAccelData)
       .filter((item) => item.timestamp > cutoffTime)
       .map((item) => ({
         x: item.x,
@@ -58,7 +58,7 @@ export default function Dashboard() {
     doc.text(`Relatório de Aceleração (últimos ${reportInterval} minutos)`, 20, 25);
 
     let y = 50;
-    filteredData.forEach((item, _) => {
+    filteredData.forEach((item,) => {
       const line = `• [${item.time}]  X: ${item.x.toFixed(2)}, Y: ${item.y.toFixed(2)}, Z: ${item.z.toFixed(2)}, Temp: ${item.temperature.toFixed(2)}°C`;
       doc.text(line, 20, y);
       y += 15;
@@ -98,10 +98,6 @@ export default function Dashboard() {
 
     return () => unsubscribe();
   }, []);
-
-  function downloadReport(arg0: number): void {
-    throw new Error("Function not implemented.");
-  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
