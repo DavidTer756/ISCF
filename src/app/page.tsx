@@ -79,7 +79,7 @@ export default function Dashboard() {
       const data = snapshot.val();
       if (!data) return;
 
-      const formattedData = Object.entries(data).map(([_, value]) => {
+      const formattedData = Object.entries(data).map(([, value]) => {
         // Type guard to ensure value has the correct shape
         const accelData = value as FirebaseAccelData;
 
