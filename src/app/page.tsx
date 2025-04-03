@@ -4,7 +4,7 @@ import { database, ref, onValue } from "./firebaseConfig";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import React from "react";
 import jsPDF from "jspdf";
-import { median, mean, mode, std, min, max } from 'mathjs';
+import { median, mean, mode, std } from 'mathjs';
 
 interface FirebaseAccelData {
   x: number;
