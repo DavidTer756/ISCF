@@ -4,6 +4,7 @@ import { database, ref, onValue } from "./firebaseConfig";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import React from "react";
 import jsPDF from "jspdf";
+import { median, mean, mode, std, min, max } from 'mathjs';
 
 interface FirebaseAccelData {
   x: number;
@@ -28,7 +29,16 @@ export default function Dashboard() {
     return response.json(); // Ensure you return the parsed JSON result
   };
 
-  const sendDownloadInterval = async (reportInterval: number) => {    
+  const calcular = (valores: number[]) => {
+    return {
+      media: mean(valores),
+      mediana: median(valores),
+      moda: mode(valores),
+      desvioPadrao: std(valores)
+    };
+  }
+
+  const sendDownloadInterval = async (reportInterval: number) => {
     const response = await fetch("https://iscf-44f40-default-rtdb.europe-west1.firebasedatabase.app/accel_data.json");
     const data = await response.json();
 
@@ -36,7 +46,7 @@ export default function Dashboard() {
 
     const filteredData = Object.entries(data)
       .map(([, value]) => value as FirebaseAccelData)
-      .filter((item) => item.timestamp > cutoffTime)
+      .filter((item) => item.timestamp >= cutoffTime)
       .map((item) => ({
         x: item.x,
         y: item.y,
@@ -48,28 +58,116 @@ export default function Dashboard() {
 
     console.log("Dados filtrados:", filteredData);
 
+    const xValues = filteredData.map(item => item.x);
+    const yValues = filteredData.map(item => item.y);
+    const zValues = filteredData.map(item => item.z);
+    const temperatureValues = filteredData.map(item => item.temperature);
+
+    const statsX = calcular(xValues);
+    const statsY = calcular(yValues);
+    const statsZ = calcular(zValues);
+    const statsTemp = calcular(temperatureValues);
+
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "px",
       format: "a4",
     });
 
+    let y = 20;
+
+    doc.setFontSize(20);
+    doc.setTextColor(30, 30, 30); // Cinza escuro
+    doc.setFont('helvetica', 'bold');
+
+    // Título centralizado
+    doc.text(`Relatório de Aceleração`, 210, y += 30, { align: 'center' });
+    doc.setFontSize(13);
+    doc.text(`Últimos ${reportInterval} minutos`, 210, y += 18, { align: 'center' });
+
+    // Linha decorativa abaixo do título
+    doc.setDrawColor(160, 160, 160);
+    doc.setLineWidth(0.5);
+    doc.line(40, y += 10, 400, y);
+
+    // Espaço antes das estatísticas
+    y += 20;
+
+    // Estatísticas - X
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50, 50, 50);
+    doc.text("Estatísticas - Eixo X", 30, y += 25);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(`• Média: ${statsX.media.toFixed(2)}`, 35, y += 18);
+    doc.text(`• Mediana: ${statsX.mediana.toFixed(2)}`, 35, y += 15);
+    doc.text(`• Moda: ${statsX.moda}`, 35, y += 15);
+    doc.text(`• Desvio padrão: ${statsX.desvioPadrao}`, 35, y += 15);
+
+    // Estatísticas - Y
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50, 50, 50);
+    doc.text("Estatísticas - Eixo Y", 30, y += 25);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(`• Média: ${statsY.media.toFixed(2)}`, 35, y += 18);
+    doc.text(`• Mediana: ${statsY.mediana.toFixed(2)}`, 35, y += 15);
+    doc.text(`• Moda: ${statsY.moda}`, 35, y += 15);
+    doc.text(`• Desvio padrão: ${statsY.desvioPadrao}`, 35, y += 15);
+
+    // Estatísticas - Z
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50, 50, 50);
+    doc.text("Estatísticas - Eixo Z", 30, y += 25);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(`• Média: ${statsZ.media.toFixed(2)}`, 35, y += 18);
+    doc.text(`• Mediana: ${statsZ.mediana.toFixed(2)}`, 35, y += 15);
+    doc.text(`• Moda: ${statsZ.moda}`, 35, y += 15);
+    doc.text(`• Desvio padrão: ${statsZ.desvioPadrao}`, 35, y += 15);
+
+    // Estatísticas - Temperatura
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50, 50, 50);
+    doc.text("Estatísticas - Temperatura", 30, y += 25);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(`• Média: ${statsTemp.media.toFixed(2)}°C`, 35, y += 18);
+    doc.text(`• Mediana: ${statsTemp.mediana.toFixed(2)}°C`, 35, y += 15);
+    doc.text(`• Moda: ${statsTemp.moda}°C`, 35, y += 15);
+    doc.text(`• Desvio padrão: ${statsTemp.desvioPadrao}°C`, 35, y += 15);
+
+    // Espaço antes dos dados individuais
+    y += 25;
+
+    // Subtítulo da secção dos dados
     doc.setFontSize(14);
-    doc.text(`Relatório de Aceleração (últimos ${reportInterval} minutos)`, 20, 25);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text("Registos de leitura", 30, y += 10);
 
-    let y = 50;
-    filteredData.forEach((item,) => {
-      const line = `• [${item.time}]  X: ${item.x.toFixed(2)}, Y: ${item.y.toFixed(2)}, Z: ${item.z.toFixed(2)}, Temp: ${item.temperature.toFixed(2)}°C`;
-      doc.text(line, 20, y);
-      y += 15;
+    // Reset de fonte para dados
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
 
-      // se ultrapassar o tamanho da página, adiciona nova página
-      if (y > 610) {
+    filteredData.forEach((item, index) => {
+      const line = `${index + 1}. [${item.time}]  X: ${item.x.toFixed(2)}  Y: ${item.y.toFixed(2)}  Z: ${item.z.toFixed(2)}  Temp: ${item.temperature.toFixed(2)}°C`;
+      doc.text(line, 30, y += 15);
+
+      if (y > 575) {
         doc.addPage();
-        y = 25;
+        y = 40;
       }
     });
-
     doc.save(`firebase_report_${reportInterval}_min.pdf`);
   };
 
@@ -101,7 +199,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-3xl font-bold mb-4">📊 Real-Time Accelerometer Data</h1>
+      <h1 className="text-3xl font-bold mb-4">Real-Time Accelerometer Data</h1>
 
       <div className="bg-gray-800 p-4 rounded-lg">
         <ResponsiveContainer width="100%" height={450}>
