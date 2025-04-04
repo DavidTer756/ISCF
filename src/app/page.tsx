@@ -19,6 +19,11 @@ export default function Dashboard() {
   const [interval, setInterval] = useState(1);
   const [reportInterval, setDownloadInterval] = useState(10);
 
+  const [email, setEmail] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
+
   const updateInterval = async (newInterval: number) => {
     const response = await fetch('http://127.0.0.1:8000/set_interval', {
       method: 'POST',
@@ -27,6 +32,15 @@ export default function Dashboard() {
     });
 
     return response.json(); // Ensure you return the parsed JSON result
+  };
+
+  const validarEmail = () => {
+    if (email.endsWith("@campus.fct.unl.pt") && password == "iscf2025") {
+      setIsAuthenticated(true);
+      setError("");
+    } else {
+      setError("Password ou email errado!");
+    }
   };
 
   const calcular = (valores: number[]) => {
@@ -199,55 +213,81 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-3xl font-bold mb-4">Real-Time Accelerometer Data</h1>
+      {!isAuthenticated ? (
+        <div className="max-w-md mx-auto mt-20 bg-gray-800 p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold mb-4 text-center">Autenticação</h2>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Escreve o teu email institucional"
+            className="w-full p-3 rounded bg-slate-700 text-white mb-4"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Escreve a tua password"
+            className="w-full p-3 rounded bg-slate-700 text-white mb-4"
+          />
+          {error && <p className="text-red-500 mb-2">{error}</p>}
+          <button
+            onClick={validarEmail}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
+          >
+            Entrar
+          </button>
+        </div>
+      ) : (
+        <>
+          <h1 className="text-3xl font-bold mb-4">Real-Time Accelerometer Data</h1>
 
-      <div className="bg-gray-800 p-4 rounded-lg">
-        <ResponsiveContainer width="100%" height={450}>
-          <LineChart data={sensorRef} margin={{ top: 10, right: 20, left: 20, bottom: 70 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-            <XAxis dataKey="time" stroke="#bbb"
-              angle={-45}
-              textAnchor="end"
-              style={{ fontSize: '12px' }} />
-            <YAxis stroke="#bbb" />
-            <Tooltip />
-            <Line type="monotone" dataKey="x" stroke="#ff7300" name="X-Axis" />
-            <Line type="monotone" dataKey="y" stroke="#387908" name="Y-Axis" />
-            <Line type="monotone" dataKey="z" stroke="#8884d8" name="Z-Axis" />
-            <Line type="monotone" dataKey="temperature" stroke="#FFBF00" name="Temperature" />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <ResponsiveContainer width="100%" height={450}>
+              <LineChart data={sensorRef} margin={{ top: 10, right: 20, left: 20, bottom: 70 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                <XAxis dataKey="time" stroke="#bbb" angle={-45} textAnchor="end" style={{ fontSize: '12px' }} />
+                <YAxis stroke="#bbb" />
+                <Tooltip />
+                <Line type="monotone" dataKey="x" stroke="#ff7300" name="X-Axis" />
+                <Line type="monotone" dataKey="y" stroke="#387908" name="Y-Axis" />
+                <Line type="monotone" dataKey="z" stroke="#8884d8" name="Z-Axis" />
+                <Line type="monotone" dataKey="temperature" stroke="#FFBF00" name="Temperature" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
 
-      <div style={{ margin: '20px 0' }} className="flex gap-2 items-center">
-        <label>Update Interval (seconds): </label>
-        <input
-          type="number"
-          className="bg-slate-800 text-white px-4 py-2 rounded-md w-32"
-          value={interval}
-          onChange={(e) => setInterval(Number(e.target.value))}
-          min="1"
-          step="1"
-        />
-        <button onClick={() => updateInterval(interval)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-          Apply
-        </button>
-      </div>
+          <div style={{ margin: '20px 0' }} className="flex gap-2 items-center">
+            <label>Update Interval (seconds): </label>
+            <input
+              type="number"
+              className="bg-slate-800 text-white px-4 py-2 rounded-md w-32"
+              value={interval}
+              onChange={(e) => setInterval(Number(e.target.value))}
+              min="1"
+              step="1"
+            />
+            <button onClick={() => updateInterval(interval)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+              Apply
+            </button>
+          </div>
 
-      <div className="flex gap-2 items-center">
-        <label>Download Report (minutes): </label>
-        <input
-          type="text"
-          min="1"
-          className="bg-slate-800 text-white px-4 py-2 rounded-md w-32"
-          value={reportInterval}
-          onChange={(e) => setDownloadInterval(Number(e.target.value))}
-          placeholder="Minutos"
-        />
-        <button onClick={() => sendDownloadInterval(reportInterval)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-          Download
-        </button>
-      </div>
+          <div className="flex gap-2 items-center">
+            <label>Download Report (minutes): </label>
+            <input
+              type="text"
+              min="1"
+              className="bg-slate-800 text-white px-4 py-2 rounded-md w-32"
+              value={reportInterval}
+              onChange={(e) => setDownloadInterval(Number(e.target.value))}
+              placeholder="Minutos"
+            />
+            <button onClick={() => sendDownloadInterval(reportInterval)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+              Download
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
