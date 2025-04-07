@@ -303,7 +303,7 @@ export default function Dashboard() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          {guest && (
+          {!guest && (
             <>
               <div style={{ margin: '20px 0' }} className="flex gap-2 items-center">
               <label>Update Interval (seconds): </label>
