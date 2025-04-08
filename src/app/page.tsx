@@ -4,8 +4,7 @@ import { database, ref, onValue } from "./firebaseConfig";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import React from "react";
 import jsPDF from "jspdf";
-import { median, mean, mode, std } from 'mathjs';
-import html2canvas from "html2canvas"; // no topo
+import { median, mean, mode, std, min, max } from 'mathjs';
 
 interface FirebaseAccelData {
   x: number;
@@ -60,14 +59,18 @@ export default function Dashboard() {
         media: 0,
         mediana: 0,
         moda: 0,
-        desvioPadrao: 0
+        desvioPadrao: 0,
+        maximo: 0,
+        minimo: 0
       };
     }
     return {
       media: mean(valores),
       mediana: median(valores),
       moda: mode(valores),
-      desvioPadrao: std(valores)
+      desvioPadrao: std(valores),
+      maximo: max(valores),
+      minimo: min(valores)
     };
   };
 
@@ -88,7 +91,7 @@ export default function Dashboard() {
         time: new Date(item.timestamp * 1000).toLocaleString(),
         timestamp: item.timestamp
       }));
-
+    
     const xValues = filteredData.map(item => item.x);
     const yValues = filteredData.map(item => item.y);
     const zValues = filteredData.map(item => item.z);
@@ -136,6 +139,8 @@ export default function Dashboard() {
     doc.text(`• Mediana: ${statsX.mediana.toFixed(2)}`, 35, y += 15);
     doc.text(`• Moda: ${statsX.moda}`, 35, y += 15);
     doc.text(`• Desvio padrão: ${statsX.desvioPadrao}`, 35, y += 15);
+    doc.text(`• Máximo: ${statsX.maximo.toFixed(2)}`, 35, y += 15);
+    doc.text(`• Mínimo: ${statsX.minimo.toFixed(2)}`, 35, y += 15);
 
     // Estatísticas - Y
     doc.setFontSize(15);
@@ -149,6 +154,8 @@ export default function Dashboard() {
     doc.text(`• Mediana: ${statsY.mediana.toFixed(2)}`, 35, y += 15);
     doc.text(`• Moda: ${statsY.moda}`, 35, y += 15);
     doc.text(`• Desvio padrão: ${statsY.desvioPadrao}`, 35, y += 15);
+    doc.text(`• Máximo: ${statsY.maximo.toFixed(2)}`, 35, y += 15);
+    doc.text(`• Mínimo: ${statsY.minimo.toFixed(2)}`, 35, y += 15);
 
     // Estatísticas - Z
     doc.setFontSize(15);
@@ -162,6 +169,8 @@ export default function Dashboard() {
     doc.text(`• Mediana: ${statsZ.mediana.toFixed(2)}`, 35, y += 15);
     doc.text(`• Moda: ${statsZ.moda}`, 35, y += 15);
     doc.text(`• Desvio padrão: ${statsZ.desvioPadrao}`, 35, y += 15);
+    doc.text(`• Máximo: ${statsZ.maximo.toFixed(2)}`, 35, y += 15);
+    doc.text(`• Mínimo: ${statsZ.minimo.toFixed(2)}`, 35, y += 15);
 
     // Estatísticas - Temperatura
     doc.setFontSize(15);
@@ -175,6 +184,8 @@ export default function Dashboard() {
     doc.text(`• Mediana: ${statsTemp.mediana.toFixed(2)}°C`, 35, y += 15);
     doc.text(`• Moda: ${statsTemp.moda}°C`, 35, y += 15);
     doc.text(`• Desvio padrão: ${statsTemp.desvioPadrao}°C`, 35, y += 15);
+    doc.text(`• Máximo: ${statsZ.maximo.toFixed(2)}`, 35, y += 15);
+    doc.text(`• Mínimo: ${statsZ.minimo.toFixed(2)}`, 35, y += 15);
 
     // Espaço antes dos dados individuais
     y += 25;
@@ -222,15 +233,16 @@ export default function Dashboard() {
         };
       });
 
+      const lastTemperature = formattedData.length > 0 ? formattedData[formattedData.length - 1].temperature : null;
+
+      // Verifica se o último valor de temperatura ultrapassou o limite
       const tempLimit = 23;
-      formattedData.forEach((item) => {
-        if (item.temperature > tempLimit) {
-          const alarmMessage = `AVISO!Temperatura muito alta: ${item.temperature.toFixed(2)}°C em [${item.time}]`;
-          setAlarm(alarmMessage);
-        }else{
-          setAlarm("");
-        }
-      });
+      if (lastTemperature !== null && lastTemperature > tempLimit) {
+        const alarmMessage = `AVISO! Temperatura muito alta: ${lastTemperature.toFixed(2)}°C em [${formattedData[formattedData.length - 1].time}]`;
+        setAlarm(alarmMessage);  // Lança o alarme
+      } else {
+        setAlarm("");  // Limpa o alarme se a temperatura for inferior ao limite
+      }
 
       let filterred = formattedData
       if (selectedDate) {
