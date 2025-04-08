@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import React from "react";
 import jsPDF from "jspdf";
 import { median, mean, mode, std } from 'mathjs';
+import html2canvas from "html2canvas"; // no topo
 
 interface FirebaseAccelData {
   x: number;
@@ -26,8 +27,9 @@ export default function Dashboard() {
   const [password, setPassword] = useState("");
   //Constant related to the guest
   const [guest, setGuest] = useState(false);
-
   const [selectedDate, setSelectedDate] = useState("");
+
+  const [alarm, setAlarm] = useState("");
 
   const updateInterval = async (newInterval: number) => {
     const response = await fetch('http://127.0.0.1:8000/set_interval', {
@@ -53,7 +55,7 @@ export default function Dashboard() {
   };
 
   const calcular = (valores: number[]) => {
-    if(valores.length == 0){
+    if (valores.length == 0) {
       return {
         media: 0,
         mediana: 0,
@@ -220,10 +222,20 @@ export default function Dashboard() {
         };
       });
 
+      const tempLimit = 23;
+      formattedData.forEach((item) => {
+        if (item.temperature > tempLimit) {
+          const alarmMessage = `AVISO!Temperatura muito alta: ${item.temperature.toFixed(2)}°C em [${item.time}]`;
+          setAlarm(alarmMessage);
+        }else{
+          setAlarm("");
+        }
+      });
+
       let filterred = formattedData
-      if(selectedDate) {
+      if (selectedDate) {
         const selectedTimestamp = new Date(selectedDate + "T00:00:00").getTime() / 1000;
-        filterred = formattedData.filter(item => item.timestamp >= selectedTimestamp); 
+        filterred = formattedData.filter(item => item.timestamp >= selectedTimestamp);
       }
       setSensorData(filterred);
     });
@@ -269,16 +281,16 @@ export default function Dashboard() {
         <>
           <h1 className="text-3xl font-bold mb-4">Real-Time Accelerometer Data</h1>
           <div className="flex gap-2 items-center mt-6 mb-4">
-              <label>Filtrar por data:</label>
-              <input
-                type="date"
-                max={new Date().toISOString().split("T")[0]} // bloqueia datas futuras
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-slate-800 text-white px-4 py-2 rounded-md"
-              />
-            </div>
-
+            <label>Filtrar por data:</label>
+            <input
+              type="date"
+              max={new Date().toISOString().split("T")[0]} // bloqueia datas futuras
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-slate-800 text-white px-4 py-2 rounded-md"
+            />
+          </div>
+          {alarm && <p className="text-red-500 mb-2">{alarm}</p>}
           <div className="bg-gray-800 p-4 rounded-lg text-center">Gráfico de Aceleração XYZ
             <ResponsiveContainer width="100%" height={450}>
               <LineChart data={sensorRef} margin={{ top: 10, right: 20, left: 20, bottom: 70 }}>
@@ -292,7 +304,7 @@ export default function Dashboard() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg mt-8 text-center">Gráfico de Temperatura 
+          <div className="bg-gray-800 p-4 rounded-lg mt-8 text-center">Gráfico de Temperatura
             <ResponsiveContainer width="100%" height={450}>
               <LineChart data={sensorRef} margin={{ top: 10, right: 20, left: 20, bottom: 70 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#444" />
@@ -306,37 +318,36 @@ export default function Dashboard() {
           {!guest && (
             <>
               <div style={{ margin: '20px 0' }} className="flex gap-2 items-center">
-              <label>Update Interval (seconds): </label>
-              <input
-                type="number"
-                className="bg-slate-800 text-white px-4 py-2 rounded-md w-32"
-                value={interval}
-                onChange={(e) => setInterval(Number(e.target.value))}
-                min="1"
-                step="1"
-              />
-              <button onClick={() => updateInterval(interval)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                Apply
-              </button>
-            </div>
-
-            <div className="flex gap-2 items-center">
-              <label>Download Report (minutes): </label>
-              <input
-                type="text"
-                min="1"
-                className="bg-slate-800 text-white px-4 py-2 rounded-md w-32"
-                value={reportInterval}
-                onChange={(e) => setDownloadInterval(Number(e.target.value))}
-                placeholder="Minutos"
-              />
-              <button onClick={() => sendDownloadInterval(reportInterval)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                Download
-              </button>
-            </div>
-          </>
+                <label>Update Interval (seconds): </label>
+                <input
+                  type="number"
+                  className="bg-slate-800 text-white px-4 py-2 rounded-md w-32"
+                  value={interval}
+                  onChange={(e) => setInterval(Number(e.target.value))}
+                  min="1"
+                  step="1"
+                />
+                <button onClick={() => updateInterval(interval)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                  Apply
+                </button>
+              </div>
+              <div className="flex gap-2 items-center">
+                <label>Download Report (minutes): </label>
+                <input
+                  type="text"
+                  min="1"
+                  className="bg-slate-800 text-white px-4 py-2 rounded-md w-32"
+                  value={reportInterval}
+                  onChange={(e) => setDownloadInterval(Number(e.target.value))}
+                  placeholder="Minutos"
+                />
+                <button onClick={() => sendDownloadInterval(reportInterval)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                  Download
+                </button>
+              </div>
+            </>
           )}
-          
+
         </>
       )}
     </div>
